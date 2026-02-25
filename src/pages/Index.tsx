@@ -1,602 +1,525 @@
 import { useState, useEffect } from "react";
+import Icon from "@/components/ui/icon";
 
 const VOWELS = ["а", "е", "ё", "и", "о", "у", "ы", "э", "ю", "я"];
-
 function isVowel(ch: string) {
   return VOWELS.includes(ch.toLowerCase());
 }
 
-function splitWord(word: string): string[] {
-  const letters = word.toLowerCase().split("");
-  const syllables: string[] = [];
-  let current = "";
-
-  for (let i = 0; i < letters.length; i++) {
-    current += letters[i];
-    if (isVowel(letters[i])) {
-      const next = letters[i + 1];
-      const afterNext = letters[i + 2];
-      if (next && !isVowel(next) && afterNext && isVowel(afterNext)) {
-        syllables.push(current);
-        current = "";
-      } else if (!next || isVowel(next)) {
-        syllables.push(current);
-        current = "";
-      }
-    }
-  }
-  if (current) {
-    if (syllables.length > 0) {
-      syllables[syllables.length - 1] += current;
-    } else {
-      syllables.push(current);
-    }
-  }
-  return syllables;
+const SOFT_CONSONANTS: Record<string, boolean> = {
+  "ч": true, "щ": true, "й": true, "ь": true,
+};
+function isSoft(ch: string) {
+  return SOFT_CONSONANTS[ch.toLowerCase()] ?? false;
 }
 
-const THEORY_CARDS = [
-  {
-    emoji: "💨",
-    title: "Что такое слог?",
-    color: "from-orange-400 to-pink-400",
-    bg: "bg-orange-50",
-    border: "border-orange-200",
-    text: "Слог — это звуки, которые произносятся одним толчком воздуха. В основе каждого слога — гласный звук.",
-    example: "РЕП-КА",
-  },
-  {
-    emoji: "🔴",
-    title: "Гласные = слоги",
-    color: "from-red-400 to-orange-400",
-    bg: "bg-red-50",
-    border: "border-red-200",
-    text: "Сколько гласных в слове — столько и слогов! Гласные: А, Е, Ё, И, О, У, Ы, Э, Ю, Я",
-    example: "А-ПЕЛ-ЬСИН",
-  },
-  {
-    emoji: "🟢",
-    title: "Открытый слог",
-    color: "from-green-400 to-teal-400",
-    bg: "bg-green-50",
-    border: "border-green-200",
-    text: "Слог заканчивается на гласный — открытый слог. Например: КО-РО-ВА — все слоги открытые!",
-    example: "КО-РО-ВА",
-  },
-  {
-    emoji: "🔵",
-    title: "Закрытый слог",
-    color: "from-blue-400 to-indigo-400",
-    bg: "bg-blue-50",
-    border: "border-blue-200",
-    text: "Слог заканчивается на согласный — закрытый слог. Например: НОЧЬ-НИК — оба слога закрытые!",
-    example: "НОЧЬ-НИК",
-  },
-];
-
-const METHODS = [
-  {
-    num: "1",
-    icon: "👏",
-    title: "Хлопки",
-    desc: "Хлопай в ладоши на каждый слог!",
-    color: "bg-yellow-400",
-    words: ["РЕП-КА", "МАН-ДА-РИН", "ЛЁД"],
-  },
-  {
-    num: "2",
-    icon: "🤲",
-    title: "Подбородок",
-    desc: "Приложи ладонь к подбородку — сколько раз опустится, столько слогов!",
-    color: "bg-pink-400",
-    words: ["РЕП-КА", "МАН-ДА-РИН", "ЛЁД"],
-  },
-  {
-    num: "3",
-    icon: "🔍",
-    title: "Гласные",
-    desc: "Найди все гласные в слове — это и есть количество слогов!",
-    color: "bg-purple-400",
-    words: ["РЕП-КА", "МАН-ДА-РИН", "ЛЁД"],
-  },
-];
-
-const QUIZ_WORDS = [
-  { word: "КОШКА", answer: 2 },
-  { word: "МОЛОКО", answer: 3 },
-  { word: "ДОМ", answer: 1 },
-  { word: "РАДУГА", answer: 3 },
-  { word: "СОН", answer: 1 },
-  { word: "ЯБЛОКО", answer: 3 },
-  { word: "РЫБА", answer: 2 },
-  { word: "МАШИНА", answer: 3 },
-];
-
-const SPLIT_WORDS = ["ЗИМА", "РЕБЯТА", "ШКОЛА", "ОБЛАКО", "ПЧЕЛА", "КАПУСТА"];
-
-const CLAP_WORDS = [
-  { word: "РЕПКА", syllables: 2 },
-  { word: "МАНДАРИН", syllables: 3 },
-  { word: "ЛЁД", syllables: 1 },
-  { word: "БАБОЧКА", syllables: 3 },
-  { word: "КОТ", syllables: 1 },
-];
-
-function CloudBg() {
-  return (
-    <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
-      <div className="absolute top-10 left-10 text-8xl opacity-20 animate-float" style={{ animationDelay: "0s" }}>☁️</div>
-      <div className="absolute top-32 right-16 text-6xl opacity-15 animate-float" style={{ animationDelay: "1s" }}>☁️</div>
-      <div className="absolute top-64 left-1/4 text-5xl opacity-10 animate-float" style={{ animationDelay: "2s" }}>⭐</div>
-      <div className="absolute bottom-40 right-10 text-7xl opacity-15 animate-float" style={{ animationDelay: "0.5s" }}>☁️</div>
-      <div className="absolute bottom-20 left-20 text-4xl opacity-20 animate-float" style={{ animationDelay: "1.5s" }}>🌟</div>
-      <div className="absolute top-1/2 right-1/4 text-5xl opacity-10 animate-float" style={{ animationDelay: "2.5s" }}>✨</div>
-    </div>
-  );
+function ColorLetter({ ch }: { ch: string }) {
+  const c = ch.toLowerCase();
+  if (isVowel(c)) return <span className="text-red-500 font-black">{ch}</span>;
+  if (isSoft(c)) return <span className="text-green-600 font-black">{ch}</span>;
+  return <span className="text-blue-600 font-black">{ch}</span>;
 }
 
-function SyllableWord({ word }: { word: string }) {
-  const parts = word.split("-");
+function ColorWord({ word }: { word: string }) {
   return (
-    <span className="inline-flex gap-0.5 items-center flex-wrap">
-      {parts.map((part, i) => (
-        <span key={i} className="inline-flex items-center">
-          <span className="font-caveat text-xl font-bold">
-            {part.split("").map((ch, j) => (
-              <span key={j} className={isVowel(ch) ? "text-red-500" : "text-slate-700"}>
-                {ch}
-              </span>
-            ))}
-          </span>
-          {i < parts.length - 1 && (
-            <span className="text-slate-400 font-bold mx-0.5">-</span>
-          )}
-        </span>
-      ))}
+    <span>
+      {word.split("").map((ch, i) =>
+        ch === "-" ? <span key={i} className="text-slate-300 mx-0.5 font-bold">-</span>
+          : ch === " " ? <span key={i}>&nbsp;</span>
+          : <ColorLetter key={i} ch={ch} />
+      )}
     </span>
   );
 }
 
-function QuizGame() {
-  const [idx, setIdx] = useState(0);
-  const [selected, setSelected] = useState<number | null>(null);
-  const [score, setScore] = useState(0);
-  const [done, setDone] = useState(false);
-  const [shake, setShake] = useState(false);
-  const [celebrate, setCelebrate] = useState(false);
+type Slide = {
+  id: number;
+  icon: string;
+  bg: string;
+  title: string;
+  subtitle?: string;
+  content: React.ReactNode;
+};
 
-  const [shuffled] = useState(() =>
-    QUIZ_WORDS.map(q => {
-      const base = [q.answer];
-      const extras = [1, 2, 3, 4].filter(n => n !== q.answer);
-      const all = [...base, ...extras].slice(0, 4);
-      return all.sort(() => Math.random() - 0.5);
-    })
-  );
-
-  const current = QUIZ_WORDS[idx];
-
-  function handleAnswer(n: number) {
-    if (selected !== null) return;
-    setSelected(n);
-    if (n === current.answer) {
-      setScore(s => s + 1);
-      setCelebrate(true);
-      setTimeout(() => setCelebrate(false), 600);
-    } else {
-      setShake(true);
-      setTimeout(() => setShake(false), 500);
-    }
-    setTimeout(() => {
-      if (idx + 1 >= QUIZ_WORDS.length) {
-        setDone(true);
-      } else {
-        setIdx(i => i + 1);
-        setSelected(null);
-      }
-    }, 900);
-  }
-
-  function restart() {
-    setIdx(0);
-    setSelected(null);
-    setScore(0);
-    setDone(false);
-  }
-
-  if (done) {
-    return (
-      <div className="text-center py-8 animate-bounce-in">
-        <div className="text-6xl mb-4">{score >= 6 ? "🏆" : score >= 4 ? "⭐" : "💪"}</div>
-        <div className="font-nunito text-3xl font-black text-slate-800 mb-2">{score} из {QUIZ_WORDS.length}</div>
-        <div className="font-nunito text-lg text-slate-600 mb-6">
-          {score >= 6 ? "Отлично! Ты настоящий знаток слогов!" : score >= 4 ? "Хорошо! Ещё немного практики!" : "Не сдавайся! Попробуй ещё раз!"}
-        </div>
-        <button onClick={restart} className="bg-gradient-to-r from-purple-500 to-pink-500 text-white font-nunito font-bold text-lg px-8 py-3 rounded-2xl shadow-lg hover:scale-105 transition-transform active:scale-95">
-          Играть снова 🎮
-        </button>
-      </div>
-    );
-  }
-
+function WordCard({ word, label, big }: { word: string; label?: string; big?: boolean }) {
+  const parts = word.split("-");
+  const hasHyphen = parts.length > 1;
   return (
-    <div>
-      <div className="flex justify-between items-center mb-6">
-        <span className="font-nunito text-slate-500 font-semibold">Вопрос {idx + 1}/{QUIZ_WORDS.length}</span>
-        <span className="font-nunito font-black text-purple-600 text-lg">⭐ {score}</span>
-      </div>
-      <div className={`text-center mb-8 transition-all ${celebrate ? "animate-pop" : ""} ${shake ? "animate-wiggle" : ""}`}>
-        <div className="font-caveat text-5xl font-bold text-slate-800 mb-2">{current.word}</div>
-        <div className="font-nunito text-slate-500">Сколько слогов в этом слове?</div>
-      </div>
-      <div className="grid grid-cols-2 gap-3">
-        {shuffled[idx].map(n => {
-          let cls = "border-2 border-slate-200 bg-white hover:border-purple-400 hover:bg-purple-50";
-          if (selected === n) {
-            cls = n === current.answer ? "border-2 border-green-400 bg-green-100" : "border-2 border-red-400 bg-red-100";
-          } else if (selected !== null && n === current.answer) {
-            cls = "border-2 border-green-400 bg-green-100";
-          }
-          return (
-            <button key={n} onClick={() => handleAnswer(n)}
-              className={`${cls} rounded-2xl py-4 font-nunito font-black text-3xl text-slate-700 transition-all hover:scale-105 active:scale-95 shadow-sm`}>
-              {n}
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-function SplitGame() {
-  const [idx, setIdx] = useState(0);
-  const [input, setInput] = useState("");
-  const [result, setResult] = useState<"correct" | "wrong" | null>(null);
-  const [score, setScore] = useState(0);
-
-  const word = SPLIT_WORDS[idx];
-  const correct = splitWord(word).join("-").toUpperCase();
-
-  function check() {
-    const norm = input.trim().toUpperCase();
-    if (norm === correct) {
-      setResult("correct");
-      setScore(s => s + 1);
-    } else {
-      setResult("wrong");
-    }
-  }
-
-  function next() {
-    setIdx(i => (i + 1) % SPLIT_WORDS.length);
-    setInput("");
-    setResult(null);
-  }
-
-  return (
-    <div>
-      <div className="flex justify-between items-center mb-6">
-        <span className="font-nunito text-slate-500 font-semibold">Слово {idx + 1}/{SPLIT_WORDS.length}</span>
-        <span className="font-nunito font-black text-orange-600 text-lg">⭐ {score}</span>
-      </div>
-      <div className="text-center mb-6">
-        <div className="font-caveat text-5xl font-bold text-slate-800 mb-2">{word}</div>
-        <div className="font-nunito text-slate-500 text-sm">Раздели на слоги через дефис, например: КОШ-КА</div>
-      </div>
-      <input
-        value={input}
-        onChange={e => { setInput(e.target.value.toUpperCase()); setResult(null); }}
-        onKeyDown={e => e.key === "Enter" && !result && check()}
-        placeholder="Напиши слоги..."
-        className="w-full border-2 border-slate-200 rounded-2xl px-4 py-3 font-caveat text-2xl text-center focus:outline-none focus:border-orange-400 mb-4"
-      />
-      {!result ? (
-        <button onClick={check} className="w-full bg-gradient-to-r from-orange-400 to-pink-400 text-white font-nunito font-bold text-lg py-3 rounded-2xl shadow-lg hover:scale-105 transition-transform active:scale-95">
-          Проверить ✅
-        </button>
-      ) : (
-        <div className={`rounded-2xl p-4 mb-4 text-center animate-bounce-in ${result === "correct" ? "bg-green-100 border-2 border-green-400" : "bg-red-100 border-2 border-red-400"}`}>
-          {result === "correct" ? (
-            <div className="font-nunito font-black text-green-700 text-xl">🎉 Правильно! Молодец!</div>
-          ) : (
-            <div>
-              <div className="font-nunito font-black text-red-700 text-lg mb-1">Не совсем… попробуй ещё!</div>
-              <div className="font-nunito text-slate-600">Правильно: <SyllableWord word={correct} /></div>
-            </div>
-          )}
-          <button onClick={next} className="mt-3 bg-white border-2 border-slate-300 text-slate-700 font-nunito font-bold px-6 py-2 rounded-xl hover:scale-105 transition-transform">
-            Следующее →
-          </button>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function ClapGame() {
-  const [wordIdx, setWordIdx] = useState(0);
-  const [claps, setClaps] = useState(0);
-  const [phase, setPhase] = useState<"idle" | "clapping" | "done">("idle");
-
-  const current = CLAP_WORDS[wordIdx];
-
-  function startClap() {
-    setClaps(0);
-    setPhase("clapping");
-  }
-
-  function doClap() {
-    setClaps(c => c + 1);
-  }
-
-  function finish() {
-    setPhase("done");
-  }
-
-  function nextWord() {
-    setWordIdx(i => (i + 1) % CLAP_WORDS.length);
-    setClaps(0);
-    setPhase("idle");
-  }
-
-  const correct = claps === current.syllables;
-
-  return (
-    <div className="text-center">
-      <div className="font-caveat text-5xl font-bold text-slate-800 mb-2 mt-2">{current.word}</div>
-      <div className="font-nunito text-slate-500 mb-6 text-sm">
-        В слове {current.syllables} {current.syllables === 1 ? "слог" : current.syllables < 5 ? "слога" : "слогов"}
-      </div>
-
-      {phase === "idle" && (
-        <button onClick={startClap} className="bg-gradient-to-r from-yellow-400 to-orange-400 text-white font-nunito font-black text-xl px-8 py-4 rounded-2xl shadow-lg hover:scale-105 transition-transform active:scale-95 mb-4">
-          Начать хлопать! 👏
-        </button>
-      )}
-
-      {phase === "clapping" && (
-        <div>
-          <button
-            onClick={doClap}
-            className="w-32 h-32 bg-gradient-to-br from-yellow-300 to-orange-400 rounded-full shadow-xl font-nunito font-black text-5xl hover:scale-110 transition-transform active:scale-90 mb-4 mx-auto flex items-center justify-center"
-          >
-            👏
-          </button>
-          <div className="font-nunito font-black text-4xl text-orange-500 mb-2">{claps}</div>
-          <div className="font-nunito text-slate-500 text-sm mb-4">хлопков</div>
-          <button onClick={finish} className="bg-green-500 text-white font-nunito font-bold px-6 py-2 rounded-xl hover:scale-105 transition-transform">
-            Готово ✓
-          </button>
-        </div>
-      )}
-
-      {phase === "done" && (
-        <div className={`rounded-2xl p-5 mb-4 animate-bounce-in ${correct ? "bg-green-100 border-2 border-green-400" : "bg-orange-100 border-2 border-orange-400"}`}>
-          <div className="font-nunito font-black text-2xl mb-1">
-            {correct ? "🎉 Отлично!" : `Ты хлопнул ${claps} раз`}
-          </div>
-          <div className="font-nunito text-slate-600">
-            Правильно: <strong>{current.syllables}</strong> {current.syllables === 1 ? "хлопок" : current.syllables < 5 ? "хлопка" : "хлопков"}
-          </div>
-          <button onClick={nextWord} className="mt-3 bg-white border-2 border-slate-300 text-slate-700 font-nunito font-bold px-6 py-2 rounded-xl hover:scale-105 transition-transform">
-            Следующее →
-          </button>
-        </div>
-      )}
-    </div>
-  );
-}
-
-export default function Index() {
-  const [activeSection, setActiveSection] = useState<"theory" | "methods" | "games">("theory");
-  const [activeGame, setActiveGame] = useState<"quiz" | "split" | "clap">("quiz");
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => { setMounted(true); }, []);
-
-  return (
-    <div className="min-h-screen font-nunito relative" style={{ background: "linear-gradient(135deg, #fef9c3 0%, #fce7f3 40%, #dbeafe 100%)" }}>
-      <CloudBg />
-
-      <div className="relative z-10 max-w-2xl mx-auto px-4 pb-16">
-
-        {/* Header */}
-        <div className={`text-center pt-10 pb-8 ${mounted ? "animate-fade-in" : "opacity-0"}`}>
-          <div className="text-6xl mb-3 animate-float">📚</div>
-          <h1 className="font-caveat text-5xl font-bold text-slate-800 mb-2 leading-tight">
-            СловоЗнайка
-          </h1>
-          <p className="font-nunito text-lg text-slate-600 font-semibold">Учим слоги — весело и легко!</p>
-        </div>
-
-        {/* Nav */}
-        <div className={`flex gap-2 justify-center mb-8 flex-wrap ${mounted ? "animate-fade-in" : "opacity-0"}`} style={{ animationDelay: "0.1s" }}>
-          {[
-            { key: "theory", label: "📖 Теория", color: "from-orange-400 to-pink-400" },
-            { key: "methods", label: "✋ Способы", color: "from-green-400 to-teal-400" },
-            { key: "games", label: "🎮 Игры", color: "from-purple-400 to-blue-400" },
-          ].map(tab => (
-            <button
-              key={tab.key}
-              onClick={() => setActiveSection(tab.key as "theory" | "methods" | "games")}
-              className={`font-nunito font-black text-sm px-5 py-2.5 rounded-2xl transition-all hover:scale-105 active:scale-95 shadow-md ${
-                activeSection === tab.key
-                  ? `bg-gradient-to-r ${tab.color} text-white shadow-lg scale-105`
-                  : "bg-white text-slate-600 border-2 border-slate-100"
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Theory */}
-        {activeSection === "theory" && (
-          <div className="animate-fade-in">
-            <div className="bg-white/80 backdrop-blur rounded-3xl p-6 mb-4 shadow-xl border-2 border-white">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="text-4xl animate-float">💨</div>
-                <div>
-                  <h2 className="font-caveat text-3xl font-bold text-slate-800">Что такое слог?</h2>
-                  <p className="font-nunito text-slate-600 text-sm mt-1">Звуки, произносимые одним толчком воздуха</p>
-                </div>
-              </div>
-              <div className="bg-gradient-to-r from-orange-50 to-pink-50 rounded-2xl p-4 mb-4 border border-orange-100">
-                <p className="font-nunito text-slate-700 leading-relaxed">
-                  В основе каждого слога — <span className="text-red-500 font-black">гласный звук</span>. Гласные мы обозначаем красным цветом.
-                  Сколько гласных — столько и слогов!
-                </p>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {["А", "Е", "Ё", "И", "О", "У", "Ы", "Э", "Ю", "Я"].map(v => (
-                  <span key={v} className="w-9 h-9 bg-red-500 text-white font-caveat font-bold text-xl rounded-xl flex items-center justify-center shadow-md">
-                    {v}
-                  </span>
-                ))}
-              </div>
-            </div>
-
-            {THEORY_CARDS.map((card, i) => (
-              <div
-                key={i}
-                className={`${card.bg} rounded-3xl p-5 mb-4 border-2 ${card.border} shadow-lg animate-fade-in`}
-                style={{ animationDelay: `${i * 0.1}s` }}
-              >
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="text-3xl">{card.emoji}</div>
-                  <h3 className="font-caveat text-2xl font-bold text-slate-800">{card.title}</h3>
-                </div>
-                <p className="font-nunito text-slate-700 text-sm leading-relaxed mb-3">{card.text}</p>
-                <div className={`bg-gradient-to-r ${card.color} rounded-2xl px-4 py-3 inline-block shadow-md`}>
-                  <SyllableWord word={card.example} />
-                </div>
-              </div>
+    <div className="inline-flex flex-col items-center gap-1">
+      <div className={`bg-white/90 rounded-2xl px-5 py-3 shadow-md border-2 border-white/80 ${big ? "text-4xl" : "text-2xl"} font-caveat font-bold`}>
+        {hasHyphen ? (
+          <span>
+            {parts.map((p, i) => (
+              <span key={i}>
+                {p.split("").map((ch, j) => <ColorLetter key={j} ch={ch} />)}
+                {i < parts.length - 1 && <span className="text-slate-300 mx-1">-</span>}
+              </span>
             ))}
-
-            <div className="bg-white/80 backdrop-blur rounded-3xl p-5 shadow-xl border-2 border-white mt-4">
-              <h3 className="font-caveat text-2xl font-bold text-slate-800 mb-3">📝 Примеры слов</h3>
-              <div className="grid grid-cols-2 gap-3">
-                {[
-                  { word: "У-РОК", n: 2 },
-                  { word: "А-ПЕЛ-ЬСИН", n: 3 },
-                  { word: "ВО-СТОРГ", n: 2 },
-                  { word: "У-ЧИТ", n: 2 },
-                  { word: "ЛЁД", n: 1 },
-                  { word: "МАН-ДА-РИН", n: 3 },
-                ].map(({ word, n }) => (
-                  <div key={word} className="bg-slate-50 rounded-2xl px-4 py-3 border border-slate-200 flex items-center justify-between">
-                    <SyllableWord word={word} />
-                    <span className="font-nunito font-black text-slate-400 text-sm">{n} сл.</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
+          </span>
+        ) : (
+          word.split("").map((ch, i) => <ColorLetter key={i} ch={ch} />)
         )}
+      </div>
+      {label && <span className="font-nunito text-xs font-bold text-white/80 uppercase tracking-wider">{label}</span>}
+    </div>
+  );
+}
 
-        {/* Methods */}
-        {activeSection === "methods" && (
-          <div className="animate-fade-in">
-            <div className="bg-white/80 backdrop-blur rounded-3xl p-5 mb-4 shadow-xl border-2 border-white">
-              <h2 className="font-caveat text-3xl font-bold text-slate-800 mb-2">3 способа делить слоги</h2>
-              <p className="font-nunito text-slate-600 text-sm">Выбери удобный для себя!</p>
-            </div>
+function SlideWrapper({ children, bg, animate }: { children: React.ReactNode; bg: string; animate: boolean }) {
+  return (
+    <div className={`rounded-3xl overflow-hidden shadow-2xl ${bg} transition-all duration-500 ${animate ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
+      style={{ transition: "opacity 0.4s ease, transform 0.4s ease" }}>
+      {children}
+    </div>
+  );
+}
 
-            {METHODS.map((m, i) => (
-              <div
-                key={i}
-                className="bg-white/80 backdrop-blur rounded-3xl p-5 mb-4 shadow-xl border-2 border-white animate-fade-in"
-                style={{ animationDelay: `${i * 0.12}s` }}
-              >
-                <div className="flex items-start gap-4">
-                  <div className={`${m.color} text-white font-nunito font-black text-2xl w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg shrink-0`}>
-                    {m.num}
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-2xl">{m.icon}</span>
-                      <h3 className="font-caveat text-2xl font-bold text-slate-800">{m.title}</h3>
-                    </div>
-                    <p className="font-nunito text-slate-600 text-sm leading-relaxed mb-3">{m.desc}</p>
-                    <div className="bg-slate-50 rounded-2xl p-3 border border-slate-100">
-                      <p className="font-nunito text-xs text-slate-400 mb-2 font-semibold">ПОПРОБУЕМ:</p>
-                      <div className="flex flex-wrap gap-2">
-                        {m.words.map(w => (
-                          <span key={w} className={`${m.color} text-white font-caveat font-bold px-3 py-1.5 rounded-xl text-lg shadow-sm`}>
-                            {w}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
+const DEMO_WORDS_CLAP = [
+  { word: "РЕП-КА", syllables: 2 },
+  { word: "МАН-ДА-РИН", syllables: 3 },
+  { word: "ЛЁД", syllables: 1 },
+];
 
-            <div className="bg-gradient-to-r from-indigo-500 to-purple-500 rounded-3xl p-5 shadow-xl text-white">
-              <h3 className="font-caveat text-2xl font-bold mb-2">💡 Главное правило</h3>
-              <p className="font-nunito text-sm leading-relaxed opacity-90">
-                Все три способа дадут одинаковый результат. Выбери тот, который нравится тебе больше всего!
-              </p>
-            </div>
-          </div>
-        )}
+function ClapDemo() {
+  const [active, setActive] = useState<number | null>(null);
+  const [clapped, setClapped] = useState<number[]>([]);
 
-        {/* Games */}
-        {activeSection === "games" && (
-          <div className="animate-fade-in">
-            <div className="flex gap-2 justify-center mb-6 flex-wrap">
-              {[
-                { key: "quiz", label: "🔢 Счёт", color: "from-purple-500 to-blue-500" },
-                { key: "split", label: "✂️ Раздели", color: "from-orange-400 to-pink-400" },
-                { key: "clap", label: "👏 Хлопки", color: "from-yellow-400 to-orange-400" },
-              ].map(g => (
-                <button
-                  key={g.key}
-                  onClick={() => setActiveGame(g.key as "quiz" | "split" | "clap")}
-                  className={`font-nunito font-black text-sm px-4 py-2.5 rounded-2xl transition-all hover:scale-105 active:scale-95 shadow-md ${
-                    activeGame === g.key
-                      ? `bg-gradient-to-r ${g.color} text-white shadow-lg scale-105`
-                      : "bg-white text-slate-600 border-2 border-slate-100"
-                  }`}
-                >
-                  {g.label}
+  function handleClap(i: number) {
+    setActive(i);
+    setClapped(prev => prev.includes(i) ? prev : [...prev, i]);
+    setTimeout(() => setActive(null), 400);
+  }
+
+  return (
+    <div className="flex flex-col sm:flex-row gap-4 justify-center mt-4">
+      {DEMO_WORDS_CLAP.map((w, i) => (
+        <button key={i} onClick={() => handleClap(i)}
+          className={`flex flex-col items-center gap-2 px-6 py-4 rounded-2xl border-2 transition-all active:scale-90 hover:scale-105 shadow-md
+            ${active === i ? "bg-yellow-300 border-yellow-400 scale-110" : clapped.includes(i) ? "bg-green-100 border-green-400" : "bg-white border-white/60"}
+          `}>
+          <span className="text-3xl">{active === i ? "👏" : clapped.includes(i) ? "✅" : "👋"}</span>
+          <span className="font-caveat text-2xl font-bold">
+            {w.word.split("").map((ch, j) =>
+              ch === "-" ? <span key={j} className="text-slate-300 mx-0.5">-</span> : <ColorLetter key={j} ch={ch} />
+            )}
+          </span>
+          <span className="font-nunito text-sm font-bold text-slate-500">{w.syllables} {w.syllables === 1 ? "хлопок" : "хлопка"}</span>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function VowelDemo() {
+  const [found, setFound] = useState<Record<string, number[]>>({ "РЕПКА": [], "МАНДАРИН": [], "ЛЁД": [] });
+  const words = ["РЕПКА", "МАНДАРИН", "ЛЁД"];
+
+  function toggleLetter(word: string, idx: number) {
+    const ch = word[idx].toLowerCase();
+    if (!isVowel(ch)) return;
+    setFound(prev => {
+      const arr = prev[word];
+      const next = arr.includes(idx) ? arr.filter(i => i !== idx) : [...arr, idx];
+      return { ...prev, [word]: next };
+    });
+  }
+
+  return (
+    <div className="flex flex-col sm:flex-row gap-4 justify-center mt-4">
+      {words.map(word => {
+        const vowelCount = word.split("").filter(ch => isVowel(ch)).length;
+        const foundCount = found[word].length;
+        const complete = foundCount === vowelCount;
+        return (
+          <div key={word} className={`flex flex-col items-center gap-2 px-5 py-4 rounded-2xl border-2 transition-all shadow-md
+            ${complete ? "bg-green-100 border-green-400" : "bg-white border-white/60"}`}>
+            <div className="flex gap-1 font-caveat text-2xl font-bold">
+              {word.split("").map((ch, i) => (
+                <button key={i} onClick={() => toggleLetter(word, i)}
+                  className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all
+                    ${isVowel(ch.toLowerCase())
+                      ? found[word].includes(i) ? "bg-red-400 text-white scale-110 shadow" : "bg-red-100 text-red-500 hover:bg-red-200"
+                      : "text-slate-600 cursor-default"
+                    }`}>
+                  {ch}
                 </button>
               ))}
             </div>
-
-            <div className="bg-white/90 backdrop-blur rounded-3xl p-6 shadow-xl border-2 border-white">
-              {activeGame === "quiz" && (
-                <div>
-                  <h2 className="font-caveat text-3xl font-bold text-slate-800 mb-1">Сколько слогов?</h2>
-                  <p className="font-nunito text-slate-500 text-sm mb-5">Выбери правильный ответ</p>
-                  <QuizGame />
-                </div>
-              )}
-              {activeGame === "split" && (
-                <div>
-                  <h2 className="font-caveat text-3xl font-bold text-slate-800 mb-1">Раздели слово</h2>
-                  <p className="font-nunito text-slate-500 text-sm mb-5">Напиши слово, разделив его на слоги через дефис</p>
-                  <SplitGame />
-                </div>
-              )}
-              {activeGame === "clap" && (
-                <div>
-                  <h2 className="font-caveat text-3xl font-bold text-slate-800 mb-1">Хлопалка!</h2>
-                  <p className="font-nunito text-slate-500 text-sm mb-5">Нажимай на кнопку на каждый слог в слове</p>
-                  <ClapGame />
-                </div>
-              )}
-            </div>
+            {complete
+              ? <span className="font-nunito text-sm font-black text-green-700">✅ {vowelCount} гласных = {vowelCount} слога</span>
+              : <span className="font-nunito text-xs text-slate-500">Нажми на гласные</span>
+            }
           </div>
-        )}
-
-        {/* Footer */}
-        <div className="text-center mt-10 font-nunito text-slate-400 text-sm">
-          <span className="text-2xl">🚀</span> СловоЗнайка — учимся и растём!
-        </div>
-      </div>
+        );
+      })}
     </div>
   );
 }
+
+function PresentationPage() {
+  const [slide, setSlide] = useState(0);
+  const [anim, setAnim] = useState(true);
+
+  function goTo(n: number) {
+    setAnim(false);
+    setTimeout(() => {
+      setSlide(n);
+      setAnim(true);
+    }, 150);
+  }
+
+  const SLIDES: Slide[] = [
+    {
+      id: 0,
+      icon: "📚",
+      bg: "bg-gradient-to-br from-violet-500 to-indigo-600",
+      title: "Слоги",
+      subtitle: "Русский язык • 1 класс",
+      content: (
+        <div className="text-center py-6">
+          <div className="text-8xl mb-6 drop-shadow-lg">📚</div>
+          <h1 className="font-caveat text-5xl sm:text-6xl font-bold text-white mb-3 drop-shadow">Слоги</h1>
+          <p className="font-nunito text-white/80 text-xl font-semibold mb-8">Русский язык • 1 класс</p>
+          <div className="flex justify-center gap-3 flex-wrap">
+            {["Что такое слог?", "Гласные = слоги", "Открытые и закрытые", "3 способа"].map((t, i) => (
+              <span key={i} className="bg-white/20 text-white font-nunito font-bold text-sm px-4 py-2 rounded-full border border-white/30">
+                {t}
+              </span>
+            ))}
+          </div>
+        </div>
+      ),
+    },
+    {
+      id: 1,
+      icon: "💨",
+      bg: "bg-gradient-to-br from-orange-400 to-amber-500",
+      title: "Что такое слог?",
+      content: (
+        <div>
+          <div className="bg-white/25 rounded-2xl p-5 mb-5 border border-white/30">
+            <p className="font-nunito text-white text-lg leading-relaxed font-semibold">
+              Слог — это те звуки в слове, которые можно произнести{" "}
+              <span className="bg-white text-orange-500 px-2 py-0.5 rounded-lg font-black">одним толчком воздуха</span>
+            </p>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-3 mb-5">
+            <div className="bg-white/20 rounded-2xl p-4 flex-1 border border-white/30">
+              <p className="font-nunito text-white/80 text-xs font-bold uppercase tracking-wider mb-2">Пример</p>
+              <div className="font-caveat text-4xl font-bold text-center">
+                <WordCard word="РЕП-КА" />
+              </div>
+              <p className="font-nunito text-white/80 text-sm text-center mt-2">2 слога</p>
+            </div>
+            <div className="bg-white/20 rounded-2xl p-4 flex-1 border border-white/30">
+              <p className="font-nunito text-white/80 text-xs font-bold uppercase tracking-wider mb-2">Слог может быть</p>
+              <ul className="font-nunito text-white text-sm space-y-1.5 font-semibold">
+                <li>✦ Из одной буквы: <span className="font-caveat text-lg"><ColorLetter ch="У" /></span>-рок</li>
+                <li>✦ Из пары звуков: ма, ко, ре</li>
+                <li>✦ Со многими согл.: <span className="font-caveat text-lg"><ColorWord word="ВО-СТОРГ" /></span></li>
+              </ul>
+            </div>
+          </div>
+          <div className="bg-white/30 rounded-2xl p-3 text-center border border-white/40">
+            <p className="font-caveat text-2xl font-bold text-white">
+              <ColorWord word="У-ЧИТ" /> &nbsp;·&nbsp; <ColorWord word="А-ПЕЛЬ-СИН" />
+            </p>
+          </div>
+        </div>
+      ),
+    },
+    {
+      id: 2,
+      icon: "🔴",
+      bg: "bg-gradient-to-br from-red-500 to-rose-600",
+      title: "Гласные звуки",
+      content: (
+        <div>
+          <div className="bg-white/25 rounded-2xl p-4 mb-5 border border-white/30">
+            <p className="font-nunito text-white text-lg font-semibold leading-relaxed">
+              Чтобы образовать слог — нужен{" "}
+              <span className="bg-white text-red-500 px-2 py-0.5 rounded-lg font-black">гласный звук</span>.
+              Гласные на письме отмечаем <span className="underline decoration-white">красным цветом</span>.
+            </p>
+          </div>
+          <div className="grid grid-cols-5 gap-2 mb-5">
+            {["А", "Е", "Ё", "И", "О", "У", "Ы", "Э", "Ю", "Я"].map(v => (
+              <div key={v} className="bg-red-400 border-2 border-red-300 text-white font-caveat font-bold text-3xl rounded-2xl flex items-center justify-center h-14 shadow-md">
+                {v}
+              </div>
+            ))}
+          </div>
+          <div className="bg-white/25 rounded-2xl p-4 border border-white/30">
+            <p className="font-nunito text-white font-black text-center text-xl">
+              Сколько гласных — столько и слогов!
+            </p>
+            <div className="flex justify-center gap-6 mt-3 flex-wrap">
+              <div className="text-center">
+                <WordCard word="У-ЧИТ" />
+                <p className="font-nunito text-white/80 text-xs mt-1">2 гласных = 2 слога</p>
+              </div>
+              <div className="text-center">
+                <WordCard word="А-ПЕЛЬ-СИН" />
+                <p className="font-nunito text-white/80 text-xs mt-1">3 гласных = 3 слога</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      ),
+    },
+    {
+      id: 3,
+      icon: "🟢",
+      bg: "bg-gradient-to-br from-emerald-500 to-teal-600",
+      title: "Открытые слоги",
+      content: (
+        <div>
+          <div className="bg-white/25 rounded-2xl p-5 mb-5 border border-white/30">
+            <p className="font-nunito text-white text-lg font-semibold leading-relaxed">
+              Открытый слог — заканчивается на{" "}
+              <span className="bg-white text-red-500 px-2 py-0.5 rounded-lg font-black">гласный звук</span>
+            </p>
+          </div>
+          <div className="bg-white/20 rounded-2xl p-5 mb-4 border border-white/30">
+            <p className="font-nunito text-white/80 text-xs font-bold uppercase tracking-wider mb-3">Пример — все слоги открытые:</p>
+            <div className="flex justify-center">
+              <div className="text-center">
+                <div className="font-caveat text-5xl font-bold text-white mb-2">
+                  <ColorWord word="КО-РО-ВА" />
+                </div>
+                <div className="flex gap-3 justify-center mt-2">
+                  {["КО", "РО", "ВА"].map((s, i) => (
+                    <div key={i} className="bg-white/30 rounded-xl px-3 py-2 border border-white/40">
+                      <div className="font-caveat text-xl font-bold">
+                        {s.split("").map((ch, j) => <ColorLetter key={j} ch={ch} />)}
+                      </div>
+                      <div className="font-nunito text-white/70 text-xs text-center">→ гласная</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="bg-white/20 rounded-2xl p-3 border border-white/30">
+            <p className="font-nunito text-white text-sm font-semibold text-center">
+              🔴 Красный = гласный звук в конце слога
+            </p>
+          </div>
+        </div>
+      ),
+    },
+    {
+      id: 4,
+      icon: "🔵",
+      bg: "bg-gradient-to-br from-blue-500 to-indigo-600",
+      title: "Закрытые слоги",
+      content: (
+        <div>
+          <div className="bg-white/25 rounded-2xl p-5 mb-5 border border-white/30">
+            <p className="font-nunito text-white text-lg font-semibold leading-relaxed">
+              Закрытый слог — заканчивается на{" "}
+              <span className="bg-white text-blue-600 px-2 py-0.5 rounded-lg font-black">согласный звук</span>
+            </p>
+          </div>
+          <div className="bg-white/20 rounded-2xl p-5 mb-4 border border-white/30">
+            <p className="font-nunito text-white/80 text-xs font-bold uppercase tracking-wider mb-3">Пример — оба слога закрытые:</p>
+            <div className="flex justify-center">
+              <div className="text-center">
+                <div className="font-caveat text-5xl font-bold text-white mb-3">
+                  <ColorWord word="НОЧЬ-НИК" />
+                </div>
+                <div className="flex gap-3 justify-center">
+                  {[{ s: "НОЧЬ", end: "Ч", soft: true }, { s: "НИК", end: "К", soft: false }].map((item, i) => (
+                    <div key={i} className="bg-white/30 rounded-xl px-4 py-3 border border-white/40">
+                      <div className="font-caveat text-2xl font-bold mb-1">
+                        {item.s.split("").map((ch, j) => <ColorLetter key={j} ch={ch} />)}
+                      </div>
+                      <div className={`font-nunito text-xs font-bold ${item.soft ? "text-green-300" : "text-blue-200"}`}>
+                        {item.soft ? "🟢 мягкий" : "🔵 твёрдый"}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="flex gap-2 flex-wrap justify-center">
+            <div className="bg-white/20 rounded-xl px-4 py-2 border border-white/30 font-nunito text-white text-sm font-semibold">
+              🔵 <span className="text-blue-200">Синий</span> = твёрдый согласный
+            </div>
+            <div className="bg-white/20 rounded-xl px-4 py-2 border border-white/30 font-nunito text-white text-sm font-semibold">
+              🟢 <span className="text-green-300">Зелёный</span> = мягкий согласный
+            </div>
+          </div>
+        </div>
+      ),
+    },
+    {
+      id: 5,
+      icon: "👏",
+      bg: "bg-gradient-to-br from-yellow-400 to-orange-500",
+      title: "Способ 1 — Хлопки",
+      content: (
+        <div>
+          <div className="bg-white/30 rounded-2xl p-5 mb-5 border border-white/40">
+            <div className="flex items-center gap-3 mb-2">
+              <span className="text-4xl">👏</span>
+              <p className="font-nunito text-white text-lg font-black">Хлопай в ладоши на каждый слог!</p>
+            </div>
+            <p className="font-nunito text-white/80 text-sm font-semibold">
+              Произноси слово вслух и хлопай — сколько хлопков, столько слогов.
+            </p>
+          </div>
+          <p className="font-nunito text-white/90 font-bold text-sm uppercase tracking-wider mb-3 text-center">Нажми на слово и попробуй!</p>
+          <ClapDemo />
+        </div>
+      ),
+    },
+    {
+      id: 6,
+      icon: "🤲",
+      bg: "bg-gradient-to-br from-pink-500 to-rose-500",
+      title: "Способ 2 — Подбородок",
+      content: (
+        <div>
+          <div className="bg-white/30 rounded-2xl p-5 mb-5 border border-white/40">
+            <div className="flex items-center gap-3 mb-2">
+              <span className="text-4xl">🤲</span>
+              <p className="font-nunito text-white text-lg font-black">Приложи ладонь к подбородку!</p>
+            </div>
+            <p className="font-nunito text-white/80 text-sm font-semibold">
+              Когда подбородок опустится или дёрнется — это один слог. Произноси слово медленно!
+            </p>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            {DEMO_WORDS_CLAP.map((w, i) => (
+              <div key={i} className="bg-white/25 rounded-2xl px-5 py-4 border border-white/30 text-center flex-1">
+                <div className="font-caveat text-3xl font-bold mb-2">
+                  {w.word.split("").map((ch, j) =>
+                    ch === "-" ? <span key={j} className="text-white/40 mx-0.5">-</span> : <ColorLetter key={j} ch={ch} />
+                  )}
+                </div>
+                <div className="flex justify-center gap-1 mb-1">
+                  {Array.from({ length: w.syllables }).map((_, k) => (
+                    <span key={k} className="text-xl">👇</span>
+                  ))}
+                </div>
+                <p className="font-nunito text-white/80 text-xs font-semibold">{w.syllables} движения подбородком</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      ),
+    },
+    {
+      id: 7,
+      icon: "🔍",
+      bg: "bg-gradient-to-br from-purple-500 to-violet-600",
+      title: "Способ 3 — Найди гласные",
+      content: (
+        <div>
+          <div className="bg-white/30 rounded-2xl p-5 mb-5 border border-white/40">
+            <div className="flex items-center gap-3 mb-2">
+              <span className="text-4xl">🔍</span>
+              <p className="font-nunito text-white text-lg font-black">Найди гласные в слове!</p>
+            </div>
+            <p className="font-nunito text-white/80 text-sm font-semibold">
+              Сколько гласных звуков — столько и слогов. Нажми на гласные буквы!
+            </p>
+          </div>
+          <VowelDemo />
+        </div>
+      ),
+    },
+    {
+      id: 8,
+      icon: "🏆",
+      bg: "bg-gradient-to-br from-emerald-400 to-cyan-500",
+      title: "Запомни главное!",
+      content: (
+        <div>
+          <div className="grid gap-3 mb-5">
+            {[
+              { num: "1", color: "bg-orange-400", text: "Слог — звуки, произносимые одним толчком воздуха", icon: "💨" },
+              { num: "2", color: "bg-red-400", text: "Сколько гласных — столько слогов", icon: "🔴" },
+              { num: "3", color: "bg-green-500", text: "Открытый слог заканчивается на гласный", icon: "🟢" },
+              { num: "4", color: "bg-blue-500", text: "Закрытый слог заканчивается на согласный", icon: "🔵" },
+            ].map(item => (
+              <div key={item.num} className="bg-white/25 rounded-2xl p-3 border border-white/30 flex items-center gap-3">
+                <div className={`${item.color} w-10 h-10 rounded-xl flex items-center justify-center text-white font-nunito font-black text-lg shrink-0 shadow`}>
+                  {item.num}
+                </div>
+                <p className="font-nunito text-white font-semibold text-sm">{item.icon} {item.text}</p>
+              </div>
+            ))}
+          </div>
+          <div className="bg-white/30 rounded-2xl p-4 text-center border border-white/40">
+            <p className="font-caveat text-2xl font-bold text-white mb-2">Цвета звуков</p>
+            <div className="flex justify-center gap-4 flex-wrap">
+              <span className="font-nunito text-sm font-bold"><span className="text-red-200 text-lg">●</span> Красный = гласный</span>
+              <span className="font-nunito text-sm font-bold"><span className="text-blue-200 text-lg">●</span> Синий = твёрдый</span>
+              <span className="font-nunito text-sm font-bold"><span className="text-green-200 text-lg">●</span> Зелёный = мягкий</span>
+            </div>
+          </div>
+        </div>
+      ),
+    },
+  ];
+
+  const current = SLIDES[slide];
+  const total = SLIDES.length;
+
+  return (
+    <div className="min-h-screen font-nunito flex flex-col items-center justify-center px-4 py-8"
+      style={{ background: "linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #1e3a5f 100%)" }}>
+
+      {/* Progress */}
+      <div className="w-full max-w-2xl mb-4 flex items-center gap-3">
+        <span className="font-nunito text-white/60 text-sm font-bold shrink-0">{slide + 1} / {total}</span>
+        <div className="flex-1 h-2 bg-white/20 rounded-full overflow-hidden">
+          <div className="h-full bg-white rounded-full transition-all duration-500"
+            style={{ width: `${((slide + 1) / total) * 100}%` }} />
+        </div>
+      </div>
+
+      {/* Slide title */}
+      <div className="w-full max-w-2xl mb-3">
+        <h2 className="font-caveat text-3xl font-bold text-white drop-shadow">{current.title}</h2>
+      </div>
+
+      {/* Slide */}
+      <SlideWrapper bg={current.bg} animate={anim}>
+        <div className="p-6 sm:p-8 min-h-72">
+          {current.content}
+        </div>
+      </SlideWrapper>
+
+      {/* Navigation */}
+      <div className="flex gap-3 mt-6 items-center">
+        <button onClick={() => goTo(Math.max(0, slide - 1))}
+          disabled={slide === 0}
+          className="flex items-center gap-2 bg-white/20 hover:bg-white/30 disabled:opacity-30 disabled:cursor-not-allowed text-white font-nunito font-bold px-5 py-3 rounded-2xl transition-all hover:scale-105 active:scale-95 border border-white/20">
+          <Icon name="ChevronLeft" size={18} /> Назад
+        </button>
+
+        <div className="flex gap-1.5">
+          {SLIDES.map((_, i) => (
+            <button key={i} onClick={() => goTo(i)}
+              className={`rounded-full transition-all ${i === slide ? "w-6 h-2.5 bg-white" : "w-2.5 h-2.5 bg-white/40 hover:bg-white/70"}`} />
+          ))}
+        </div>
+
+        <button onClick={() => goTo(Math.min(total - 1, slide + 1))}
+          disabled={slide === total - 1}
+          className="flex items-center gap-2 bg-white text-indigo-700 hover:bg-white/90 disabled:opacity-30 disabled:cursor-not-allowed font-nunito font-bold px-5 py-3 rounded-2xl transition-all hover:scale-105 active:scale-95 shadow-lg">
+          Далее <Icon name="ChevronRight" size={18} />
+        </button>
+      </div>
+
+      {/* Slide dots nav hint */}
+      <p className="font-nunito text-white/40 text-xs mt-4">Нажимай на точки для перехода к слайду</p>
+    </div>
+  );
+}
+
+export default PresentationPage;
